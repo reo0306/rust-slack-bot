@@ -1,40 +1,10 @@
 use worker::*;
-//use serde::{Serialize, Deserialize};
 
 use crate::adapter::{
     github::Github,
     slack::Slack,
 };
 use crate::model::routes::{SlashCommandResponse, SlashCommandRequest, GithubWebhookRequest};
-
-/*#[derive(Deserialize)]
-struct SlashCommandRequest {
-    text: String
-}
-
-#[derive(Serialize)]
-struct SlashCommandResponse {
-    blocks: SlackMessage,
-    response_type: String,
-}
-
-#[derive(Deserialize)]
-struct GithubWebhookRequest {
-    action: String,
-    issue: Issue,
-    repository: ReqRepo,
-}
-
-#[derive(Deserialize)]
-struct ReqRepo {
-    name: String,
-    owner: ReqOwner,
-}
-
-#[derive(Deserialize)]
-struct ReqOwner {
-    login: String,
-}*/
 
 pub async fn lookup(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let body = req.text().await?;

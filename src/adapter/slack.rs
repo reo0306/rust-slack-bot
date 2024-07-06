@@ -1,31 +1,10 @@
 use std::error::Error;
 use chrono::NaiveDateTime;
-//use serde::Serialize;
 
 use crate::model::github::Issue;
 use crate::model::slack::{SlackMessage, Text, Accessory};
 
 pub struct Slack;
-
-/*#[derive(Serialize)]
-pub struct SlackMessage {
-    r#type: String,
-    text: Text,
-    accessory: Accessory,
-}
-
-#[derive(Serialize)]
-pub struct Text {
-    r#type: String,
-    text: String,
-}
-
-#[derive(Serialize)]
-pub struct Accessory {
-    r#type: String,
-    image_url: String,
-    alt_text: String,
-}*/
 
 impl Slack {
     pub fn issue_slack_message_text_lines(&self, issue: &Issue, text: &String, prefix_text: &String) -> String {
