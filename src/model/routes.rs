@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 use crate::model::github::Issue;
-use crate::model::slack::SlackMessage;
+use super::slack::SlackMessage;
 
 #[derive(Deserialize)]
 pub struct SlashCommandRequest {
@@ -10,7 +10,7 @@ pub struct SlashCommandRequest {
 
 #[derive(Serialize)]
 pub struct SlashCommandResponse {
-    pub blocks: SlackMessage,
+    pub blocks: Vec<SlackMessage>,
     pub response_type: String,
 }
 
