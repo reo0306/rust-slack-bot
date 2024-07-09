@@ -22,16 +22,17 @@ pub async fn lookup(mut req: Request, _ctx: RouteContext<()>) -> Result<Response
 
     match issue {
         Ok(issue) => {
-            let text_lines = Slack.issue_slack_message_text_lines(&issue, &body, &"".to_string());
-            let message = Slack.construct_gh_issue_slack_message(&issue, &text_lines);
-            let slash_command_response = SlashCommandResponse {
-                blocks: message,
-                response_type: "in_channel".to_string(),
-            };
+            let result = serde_json::json!(
+                SlashCommandResponse {
+                    blocks: Slack.construct_gh_issue_slack_message(
+                        &issue,
+                        &Slack.issue_slack_message_text_lines(&issue, &body, "")
+                    ),
+                    response_type: "in_channel".to_string(),
+                }
+            );
 
-            let json = serde_json::json!(&slash_command_response);
-
-            Response::from_json(&json)
+            Response::from_json(&result)
         },
         Err(e) => Response::error(format!("{:?}", e), 500),
     }
@@ -40,23 +41,22 @@ pub async fn lookup(mut req: Request, _ctx: RouteContext<()>) -> Result<Response
 pub async fn webhook(mut req: Request, ctx: RouteContext<()>) -> Result<Response> {
     let body: GithubWebhookRequest = req.json().await?;
 
-    let prefix_text = format!("An issue was {}", body.action);
-    let issue_string = format!("{}/{}#{}", body.repository.owner.login, body.repository.name, body.issue.number);
+    let text_lines = Slack.issue_slack_message_text_lines(
+        &body.issue,
+        &format!("{}/{}#{}", body.repository.owner.login, body.repository.name, body.issue.number),
+        &format!("An issue was {}", body.action)
+    );
 
-    let issue = body.issue;
-
-    let text_lines = Slack.issue_slack_message_text_lines(&issue, &issue_string, &prefix_text);
-
-    let message = Slack.construct_gh_issue_slack_message(&issue, &text_lines);
     let slash_command_response = SlashCommandResponse {
-            blocks: message,
-            response_type: "in_channel".to_string(),
+        blocks: Slack.construct_gh_issue_slack_message(&body.issue, &text_lines),
+        response_type: "in_channel".to_string(),
     };
 
-    let slack_webhook_url = ctx.secret("SLACK_WEBHOOK_URL")?.to_string();
-
     let result = Slack
-        .send_issue_slack_message(&slack_webhook_url, &slash_command_response)
+        .send_issue_slack_message(
+            &ctx.secret("SLACK_WEBHOOK_URL")?.to_string(),
+            &slash_command_response
+        )
         .await
         .map_err(|e| worker::Error::RustError(format!("{}", e)));
 
@@ -95,18 +95,17 @@ mod routes_test {
 
         let body = "token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f".to_string();
 
-        let text_lines = Slack.issue_slack_message_text_lines(&issue, &body, &"".to_string());
-        let message = Slack.construct_gh_issue_slack_message(&issue, &text_lines);
         let result = SlashCommandResponse {
-            blocks: message,
+            blocks: Slack.construct_gh_issue_slack_message(
+                &issue,
+                &Slack.issue_slack_message_text_lines(&issue, &body, "")
+            ),
             response_type: "in_channel".to_string(),
         };
 
-        let slack_message = r#"{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":"\n`*test - <https://github.com/cloudflare/wrangler-legacy/issues/1|token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f>*`\nbody\n`*open* - Created by <https://github.com/signalnerve|test> on 2024-07-07 20:09:31`"},"accessory":{"type":"image","image_url":"https://github.com/images/error/octocat_happy.gif","alt_text":"test"},"response_type":"in_channel"}]}"#;
+        let slack_message: SlashCommandResponse = serde_json::from_str(r#"{"blocks":[{"type":"section","text":{"type":"mrkdwn","text":"\n*test - <https://github.com/cloudflare/wrangler-legacy/issues/1|>*\nbody\n*open* - Created by <https://github.com/signalnerve|test> on 2024-07-07 20:09:31"},"accessory":{"type":"image","image_url":"https://github.com/images/error/octocat_happy.gif","alt_text":"test"}}],"response_type":"in_channel"}"#).unwrap();
 
-        let json = serde_json::to_string(&result).unwrap();
-
-        assert_eq!(json, slack_message);
+        assert_eq!(serde_json::json!(&slack_message), serde_json::json!(&result));
     }
 
     #[test]
@@ -142,13 +141,14 @@ mod routes_test {
             repository: repo,
         };
 
-        let prefix_text = format!("An issue was {}", body.action);
-        let issue_string = format!("{}/{}#{}", body.repository.owner.login, body.repository.name, body.issue.number);
-        let issue = body.issue;
-        let text_lines = Slack.issue_slack_message_text_lines(&issue, &issue_string, &prefix_text);
-        let message = Slack.construct_gh_issue_slack_message(&issue, &text_lines);
+        let text_lines = Slack.issue_slack_message_text_lines(
+            &body.issue,
+            &format!("{}/{}#{}", body.repository.owner.login, body.repository.name, body.issue.number),
+            &format!("An issue was {}", body.action)
+        );
+        let result = Slack.construct_gh_issue_slack_message(&body.issue, &text_lines);
 
-        let result = vec![SlackMessage {
+        assert_eq!(vec![SlackMessage {
             r#type: "section".to_string(),
             text: Text {
                 r#type: "mrkdwn".to_string(),
@@ -156,13 +156,10 @@ mod routes_test {
             },
             accessory: Accessory {
                 r#type: "image".to_string(),
-                image_url: issue.user.avatar_url,
-                alt_text: issue.user.login,
+                image_url: body.issue.user.avatar_url,
+                alt_text: body.issue.user.login,
             },
-            //response_type: "in_channel".to_string(),
-        }];
-
-        assert_eq!(result, message);
+        }], result);
 
     }
 }

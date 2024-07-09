@@ -8,7 +8,7 @@ pub struct SlashCommandRequest {
     pub text: String
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SlashCommandResponse {
     pub blocks: Vec<SlackMessage>,
     pub response_type: String,
