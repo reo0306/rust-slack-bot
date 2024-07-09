@@ -1,7 +1,9 @@
 use serde::{Serialize, Deserialize};
 
-use crate::model::github::Issue;
-use super::slack::SlackMessage;
+use crate::domain::model::{
+    github::Issue,
+    slack::SlackMessage
+};
 
 #[derive(Deserialize)]
 pub struct SlashCommandRequest {

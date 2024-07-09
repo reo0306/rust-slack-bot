@@ -1,7 +1,7 @@
 use std::error::Error;
 use regex::Regex;
 
-use crate::model::github::Issue;
+use crate::domain::model::github::Issue;
 
 pub struct Github;
 

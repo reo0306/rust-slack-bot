@@ -1,4 +1,4 @@
-mod model;
+mod domain;
 mod adapter;
 mod driver;
 

@@ -2,7 +2,7 @@ use std::error::Error;
 use chrono::NaiveDateTime;
 use regex::Regex;
 
-use crate::model::{
+use crate::domain::model::{
     github::Issue,
     slack::{SlackMessage, Text, Accessory, TextLine},
     routes::SlashCommandResponse,
@@ -74,8 +74,10 @@ impl Slack {
 #[cfg(test)]
 mod message_test {
     use super::*;
-    use crate::model::github::{Issue, User};
-    use crate::model::slack::{SlackMessage, Text, Accessory};
+    use crate::domain::model::{
+        github::{Issue, User},
+        slack::{SlackMessage, Text, Accessory}
+    };
 
     #[test]
     fn test_issue_slack_message_text_lines() {

@@ -4,7 +4,11 @@ use crate::adapter::{
     github::Github,
     slack::Slack,
 };
-use crate::model::routes::{SlashCommandRequest, GithubWebhookRequest, SlashCommandResponse};
+use crate::domain::model::routes::{
+    SlashCommandRequest,
+    GithubWebhookRequest,
+    SlashCommandResponse
+};
 
 pub async fn lookup(mut req: Request, _ctx: RouteContext<()>) -> Result<Response> {
     let body = req.text().await?;
@@ -69,7 +73,7 @@ pub async fn webhook(mut req: Request, ctx: RouteContext<()>) -> Result<Response
 #[cfg(test)]
 mod routes_test {
     use crate::adapter::slack::Slack;
-    use crate::model::{
+    use crate::domain::model::{
         github::{Issue, User},
         routes::{GithubWebhookRequest, ReqOwner, ReqRepo, SlashCommandResponse},
         slack::{Accessory, SlackMessage, Text},
@@ -110,35 +114,27 @@ mod routes_test {
 
     #[test]
     fn test_webhook() {
-        let webhook_user = User {
-            html_url: "https://github.com/signalnerve".to_string(),
-            login: "test".to_string(),
-            avatar_url: "https://github.com/images/error/octocat_happy.gif".to_string(),
-        };
-
-        let webhook_issue = Issue {
-            html_url: "https://github.com/cloudflare/wrangler-legacy/issues/1".to_string(),
-            title: "test".to_string(),
-            body: "body".to_string(),
-            state: "open".to_string(),
-            created_at: "2024-07-07T20:09:31Z".to_string(),
-            number: 1,
-            user: webhook_user,
-        };
-
-        let req_owner = ReqOwner {
-            login: "test".to_string(),
-        };
-
-        let repo = ReqRepo {
-            name: "test_repo".to_string(),
-            owner: req_owner,
-        };
-
         let body = GithubWebhookRequest {
             action: "opened".to_string(),
-            issue: webhook_issue,
-            repository: repo,
+            issue: Issue {
+                html_url: "https://github.com/cloudflare/wrangler-legacy/issues/1".to_string(),
+                title: "test".to_string(),
+                body: "body".to_string(),
+                state: "open".to_string(),
+                created_at: "2024-07-07T20:09:31Z".to_string(),
+                number: 1,
+                user: User {
+                    html_url: "https://github.com/signalnerve".to_string(),
+                    login: "test".to_string(),
+                    avatar_url: "https://github.com/images/error/octocat_happy.gif".to_string(),
+                }
+            },
+            repository: ReqRepo {
+                name: "test_repo".to_string(),
+                owner: ReqOwner {
+                    login: "test".to_string(),
+                }
+            },
         };
 
         let text_lines = Slack.issue_slack_message_text_lines(
