@@ -1,7 +1,13 @@
 use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
+pub struct Message {
+    pub blocks: Vec<Blocks>,
+    pub response_type: String,
+}
+
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct SlackMessage {
+pub struct Blocks {
     pub r#type: String,
     pub text: Text,
     pub accessory: Accessory,

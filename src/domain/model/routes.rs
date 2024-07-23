@@ -1,25 +1,17 @@
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
 
-use crate::domain::model::{
-    github::Issue,
-    slack::SlackMessage
-};
+use crate::domain::model::github::{Issue, PullRequest};
 
 #[derive(Deserialize)]
 pub struct SlashCommandRequest {
     pub text: String
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct SlashCommandResponse {
-    pub blocks: Vec<SlackMessage>,
-    pub response_type: String,
-}
-
 #[derive(Deserialize)]
 pub struct GithubWebhookRequest {
     pub action: String,
-    pub issue: Issue,
+    pub issue: Option<Issue>,
+    pub pull_request: Option<PullRequest>,
     pub repository: ReqRepo,
 }
 
