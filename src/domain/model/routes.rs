@@ -26,3 +26,12 @@ pub struct ReqOwner {
     pub login: String,
 }
 
+impl GithubWebhookRequest {
+    pub fn label(&self) -> &str {
+        match (&self.issue, &self.pull_request) {
+            (Some(_), None) => "issue",
+            (None, Some(_)) => "Pull request",
+            _ => "",
+        }
+    }
+}

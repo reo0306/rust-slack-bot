@@ -15,7 +15,7 @@ impl Slack {
         let text_lines = self.text_lines(
             payload,
             &format!("{}/{}#{}", body.repository.owner.login, body.repository.name, payload.number()),
-            &format!("An issue was {}", body.action)
+            &format!("An {} was {}", body.label(), body.action)
         );
 
         Message {
@@ -47,9 +47,13 @@ impl Slack {
 	[
             prefix_text,
             text_line.title.as_str(),
-            payload.body(),
+            payload.body().unwrap_or(""),
             text_line.state.as_str(),
-        ].join("\n")
+        ]
+        .into_iter()
+        .filter(|t| !t.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
     }
 
     pub fn construct_message<T: PayloadRepository>(&self, payload: &T, text_lines: &String) -> Vec<Blocks> {
@@ -97,7 +101,7 @@ mod message_test {
         let issue = Issue {
             html_url: "https://github.com/cloudflare/wrangler-legacy/issues/1".to_string(),
             title: "test".to_string(),
-            body: "body".to_string(),
+            body: Some("body".to_string()),
             state: "open".to_string(),
             created_at: "2024-07-07T20:09:31Z".to_string(),
             number: 1,
@@ -109,7 +113,33 @@ mod message_test {
         };
 
         assert_eq!(
-            "\n*test - <https://github.com/cloudflare/wrangler-legacy/issues/1|>*\nbody\n*open* - Created by <https://github.com/signalnerve|test> on 2024-07-07 20:09:31".to_string(),
+            "*test - <https://github.com/cloudflare/wrangler-legacy/issues/1|>*\nbody\n*open* - Created by <https://github.com/signalnerve|test> on 2024-07-07 20:09:31".to_string(),
+            Slack.text_lines(
+                &issue,
+                "token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f",
+                ""
+            )
+        );
+    }
+
+    #[test]
+    fn test_issue_text_lines_is_body_none() {
+        let issue = Issue {
+            html_url: "https://github.com/cloudflare/wrangler-legacy/issues/1".to_string(),
+            title: "test".to_string(),
+            body: None,
+            state: "open".to_string(),
+            created_at: "2024-07-07T20:09:31Z".to_string(),
+            number: 1,
+            user: User {
+                html_url: "https://github.com/signalnerve".to_string(),
+                login: "test".to_string(),
+                avatar_url: "https://github.com/images/error/octocat_happy.gif".to_string(),
+            }
+        };
+
+        assert_eq!(
+            "*test - <https://github.com/cloudflare/wrangler-legacy/issues/1|>*\n*open* - Created by <https://github.com/signalnerve|test> on 2024-07-07 20:09:31".to_string(),
             Slack.text_lines(
                 &issue,
                 "token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f",
@@ -123,7 +153,7 @@ mod message_test {
         let pull_request = PullRequest {
             html_url: "https://github.com/reo0306/rust-todo-di-app/pull/1".to_string(),
             title: "test pull_request".to_string(),
-            body: "body pull_request".to_string(),
+            body: Some("body pull_request".to_string()),
             state: "open".to_string(),
             created_at: "2024-07-07T20:09:31Z".to_string(),
             number: 2,
@@ -135,7 +165,33 @@ mod message_test {
         };
 
         assert_eq!(
-            "\n*test pull_request - <https://github.com/reo0306/rust-todo-di-app/pull/1|>*\nbody pull_request\n*open* - Created by <https://github.com/reo0306|test2> on 2024-07-07 20:09:31".to_string(),
+            "*test pull_request - <https://github.com/reo0306/rust-todo-di-app/pull/1|>*\nbody pull_request\n*open* - Created by <https://github.com/reo0306|test2> on 2024-07-07 20:09:31".to_string(),
+            Slack.text_lines(
+                &pull_request,
+                "token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f",
+                ""
+            )
+        );
+    }
+
+    #[test]
+    fn test_pull_request_text_lines_is_body_none() {
+        let pull_request = PullRequest {
+            html_url: "https://github.com/reo0306/rust-todo-di-app/pull/1".to_string(),
+            title: "test pull_request".to_string(),
+            body: None,
+            state: "open".to_string(),
+            created_at: "2024-07-07T20:09:31Z".to_string(),
+            number: 2,
+            user: User {
+                html_url: "https://github.com/reo0306".to_string(),
+                login: "test2".to_string(),
+                avatar_url: "https://github.com/images/error/octocat_happy.gif".to_string(),
+            }
+        };
+
+        assert_eq!(
+            "*test pull_request - <https://github.com/reo0306/rust-todo-di-app/pull/1|>*\n*open* - Created by <https://github.com/reo0306|test2> on 2024-07-07 20:09:31".to_string(),
             Slack.text_lines(
                 &pull_request,
                 "token=gIkuvaNzQIHg97ATvDxqgjtO&team_id=T0001&team_domain=example&enterprise_id=E0001&enterprise_name=Globular%2520Construct%2520Inc&channel_id=C2147483705&channel_name=test&user_id=U2147483697&user_name=Steve&command=%2Fissue&text=cloudflare%2Fwrangler%231&response_url=https%3A%2F%2Fhooks.slack.com%2Fcommands%2F1234%2F5678&trigger_id=13345224609.738474920.8088930838d88f008e0root@d1cdcb320e3f",
@@ -149,7 +205,7 @@ mod message_test {
         let issue = Issue {
             html_url: "https://github.com/cloudflare/wrangler-legacy/issues/1".to_string(),
             title: "test".to_string(),
-            body: "body".to_string(),
+            body: Some("body".to_string()),
             state: "open".to_string(),
             created_at: "2024-07-07T20:09:31Z".to_string(),
             number: 1,

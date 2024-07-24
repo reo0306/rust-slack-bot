@@ -3,36 +3,36 @@ use serde::{Serialize, Deserialize};
 pub trait PayloadRepository {
     fn html_url(&self) -> &str;
     fn title(&self) -> &str;
-    fn body(&self) -> &str;
+    fn body(&self) -> Option<&str>;
     fn state(&self) -> &str;
     fn created_at(&self) -> &str;
     fn number(&self) -> u32;
     fn user(&self) -> &User;
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Issue {
   pub html_url: String,
   pub title: String,
-  pub body: String,
+  pub body: Option<String>,
   pub state: String,
   pub created_at: String,
   pub number: u32,
   pub user: User,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PullRequest {
   pub html_url: String,
   pub title: String,
-  pub body: String,
+  pub body: Option<String>,
   pub state: String,
   pub created_at: String,
   pub number: u32,
   pub user: User,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct User {
   pub html_url: String,
   pub login: String,
@@ -48,8 +48,8 @@ impl PayloadRepository for Issue {
         &self.title
     }
 
-    fn body(&self) -> &str {
-        &self.body
+    fn body(&self) -> Option<&str> {
+        self.body.as_deref()
     }
 
     fn state(&self) -> &str {
@@ -78,8 +78,8 @@ impl PayloadRepository for PullRequest {
         &self.title
     }
 
-    fn body(&self) -> &str {
-        &self.body
+    fn body(&self) -> Option<&str> {
+        self.body.as_deref()
     }
 
     fn state(&self) -> &str {
